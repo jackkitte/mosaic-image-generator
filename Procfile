@@ -1,0 +1,1 @@
+web: mosaic-image-generator
