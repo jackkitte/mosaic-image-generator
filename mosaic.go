@@ -7,41 +7,18 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
-	"path/filepath"
-	"sync"
 )
-
-type DB struct {
-	mutex *sync.Mutex
-	store map[string][3]float64
-}
-
-func (db *DB) nearest(target [3]float64) string {
-	var filename string
-	db.mutex.Lock()
-	smallest := 1000000.0
-	for k, v := range db.store {
-		dist := distance(target, v)
-		if dist < smallest {
-			filename, smallest = k, dist
-		}
-	}
-	delete(db.store, filename)
-	db.mutex.Unlock()
-	fmt.Println("filenname: ", filename)
-	return filename
-}
 
 // resize an image by its ratio e.g. ratio 2 means reduce the size by 1/2, 10 means reduce the size by 1/10
 func resize(in image.Image, newWidth int) image.NRGBA {
 	bounds := in.Bounds()
-	width := bounds.Dx()
+	width := bounds.Max.X - bounds.Min.X
 	ratio := width / newWidth
 	out := image.NewNRGBA(image.Rect(bounds.Min.X/ratio, bounds.Min.X/ratio, bounds.Max.X/ratio, bounds.Max.Y/ratio))
 	for y, j := bounds.Min.Y, bounds.Min.Y; y < bounds.Max.Y; y, j = y+ratio, j+1 {
 		for x, i := bounds.Min.X, bounds.Min.X; x < bounds.Max.X; x, i = x+ratio, i+1 {
 			r, g, b, a := in.At(x, y).RGBA()
-			out.SetNRGBA(i, j, color.NRGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), uint8(a >> 8)})
+			out.SetNRGBA(i, j, color.NRGBA{uint8(r), uint8(g), uint8(b), uint8(a)})
 		}
 	}
 	return *out
@@ -63,30 +40,25 @@ func averageColor(img image.Image) [3]float64 {
 
 var TILESDB map[string][3]float64
 
-func cloneTilesDB() DB {
+func cloneTilesDB() map[string][3]float64 {
 	db := make(map[string][3]float64)
 	for k, v := range TILESDB {
 		db[k] = v
 	}
-	tiles := DB{
-		store: db,
-		mutex: &sync.Mutex{},
-	}
-	return tiles
+	return db
 }
 
 // populate a tiles database in memory
-func tilesDB() map[string][3]float64 {
+func tilesDB() {
 	fmt.Println("Start populating tiles db ...")
-	db := make(map[string][3]float64)
 	files, _ := ioutil.ReadDir("tiles")
 	for _, f := range files {
-		name := filepath.Join("tiles", f.Name())
+		name := "tiles/" + f.Name()
 		file, err := os.Open(name)
 		if err == nil {
 			img, _, err := image.Decode(file)
 			if err == nil {
-				db[name] = averageColor(img)
+				TILESDB[name] = averageColor(img)
 			} else {
 				fmt.Println("error in populating tiles db:", err, name)
 			}
@@ -96,7 +68,20 @@ func tilesDB() map[string][3]float64 {
 		file.Close()
 	}
 	fmt.Println("Finished populating tiles db.")
-	return db
+}
+
+// find the nearest matching image
+func nearest(target [3]float64, db *map[string][3]float64) string {
+	var filename string
+	smallest := 1000000.0
+	for k, v := range *db {
+		dist := distance(target, v)
+		if dist < smallest {
+			filename, smallest = k, dist
+		}
+	}
+	delete(*db, filename)
+	return filename
 }
 
 // find the Eucleadian distance between 2 points
