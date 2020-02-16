@@ -28,6 +28,7 @@ func (db *DB) nearest(target [3]float64) string {
 	}
 	delete(db.store, filename)
 	db.mutex.Unlock()
+	fmt.Println("filenname: ", filename)
 	return filename
 }
 
