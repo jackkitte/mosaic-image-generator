@@ -81,7 +81,6 @@ func tilesDB() map[string][3]float64 {
 	files, _ := ioutil.ReadDir("tiles")
 	for _, f := range files {
 		name := filepath.Join("tiles", f.Name())
-		fmt.Println("filename: ", name)
 		file, err := os.Open(name)
 		if err == nil {
 			img, _, err := image.Decode(file)

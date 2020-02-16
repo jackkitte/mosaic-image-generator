@@ -31,8 +31,7 @@ func main() {
 		Addr:    ":" + os.Getenv("PORT"),
 		Handler: mux,
 	}
-	TILESDB = make(map[string][3]float64)
-	go tilesDB()
+	TILESDB = tilesDB()
 	fmt.Println("Mosaic server started.")
 	server.ListenAndServe()
 
