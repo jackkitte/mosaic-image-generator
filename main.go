@@ -129,6 +129,7 @@ func mosaic(w http.ResponseWriter, r *http.Request) {
 	original, _, _ := image.Decode(file)
 	bounds := original.Bounds()
 	db := cloneTilesDB()
+	fmt.Println(db)
 	// fan-out
 	c1 := cut(original, &db, tileSize, bounds.Min.X, bounds.Min.Y, bounds.Max.X/2, bounds.Max.Y/2)
 	c2 := cut(original, &db, tileSize, bounds.Max.X/2, bounds.Min.Y, bounds.Max.X, bounds.Max.Y/2)
